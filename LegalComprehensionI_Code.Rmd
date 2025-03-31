@@ -1,0 +1,97 @@
+---
+title: "Legal Comprehension & Summarizing via Annotation I Project"
+author: "Jessica Macaluso"
+date: "2025-03-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+First, let's disable scientific notation and then read in `tidyverse`.
+
+```{r sci_notation}
+options(scipen = 999) 
+```
+
+```{r packages}
+library(tidyverse)
+```
+
+Next, let's read in our dataframes.
+
+Here is our Cohen's Kappa annotation data.
+
+```{r data1}
+kappa <- read.csv(file='kappa2_F22_F23.csv')
+head(kappa)
+```
+
+Here is our writing test performance dataframe.
+
+```{r data2}
+writing <- read.csv(file='writing2_F22_F23.csv')
+head(writing)
+```
+
+Now, let's merge our dataframes by participant.
+
+```{r merge}
+merge(kappa, writing, by='ID', all = TRUE) -> full_F22_F23
+head(full_F22_F23)
+```
+
+```{r nrow}
+nrow(full_F22_F23)
+```
+
+We have 35 participants/students from both Fall 2022 and Fall 2023.
+
+Let's make a new dataframe with just the columns of interest.
+
+```{r data3}
+simple_df <- full_F22_F23 %>% select(ID, Group.x, Test1, Test2,
+                                     kappa_avg, WritingTest1, WritingTest2)
+simple_df <- rename(simple_df,c("Group" = "Group.x"))
+simple_df <- rename(simple_df,c("KappaAverage" = "kappa_avg"))
+simple_df
+```
+
+Let's visualize our data!
+
+```{r plot1}
+ggplot(data = simple_df, aes(x = KappaAverage, y = WritingTest1, color = Group)) + 
+  geom_point(size = 8) +
+  geom_smooth(method = "lm", se = FALSE, fullrange = TRUE, aes(color = Group), size = 5) +
+  labs(x = "Cohen's Kappa Annotation Accuracy",
+       y = "Writing Test 1 Performance",
+       title = "Positive Relationship: as Writing Test 1 Performance Increases, Annotation Accuracy Increases for Both Gloss Groups") +
+  theme_classic()
+```
+
+```{r plot2}
+ggplot(data = simple_df, aes(x = KappaAverage, y = WritingTest2, color = Group)) + 
+  geom_point(size = 8) +
+  geom_smooth(method = "lm", se = FALSE, fullrange = TRUE, aes(color = Group), size = 5) +
+  labs(x = "Cohen's Kappa Annotation Accuracy",
+       y = "Writing Test 2 Performance",
+       title = "Gloss Helps Weaker Students Catch Up: Softens Relationship Between Early Accuracy & Writing Test 2 Performance") +
+  theme_classic()
+```
+
+Let's run a few regression models to understand our findings. 
+
+```{r regression1}
+model3 <- lm(WritingTest1 ~ 1 + KappaAverage + Group, data = simple_df)
+model3 %>% summary()
+```
+
+No significant effects.
+
+```{r regression4}
+model4 <- lm(WritingTest2 ~ 1 + KappaAverage + Group, data = simple_df)
+model4 %>% summary()
+```
+
+Yes, significant differences for Cohen's Kappa when looking at WritingTest2 performance.
